@@ -36,7 +36,7 @@ goods = [
 
 class GoodMgr:
     def __init__(self):
-
+        self.synchronous()
         self.__money = 15000
 
     def synchronous(self):
@@ -67,6 +67,7 @@ class GoodMgr:
     def add_shopcat(self, goodsid):
         '''
         将商品添加到购物车
+        在数据库中不显示重复的商品信息,只在数量上增加
         :param goodsid:可能是单个或多个商品,所以要判断
         :return:
         '''
@@ -158,8 +159,9 @@ def init_db(good_mgr):
 
 
 good_mgr = GoodMgr()
-good_mgr.synchronous()
+
 good_list = __logging_data()
 good_mgr.add_goods(good_list)
 good_mgr.show_goods()
 good_mgr.add_shopcat([1,2])
+good_mgr.show_shopcat()
