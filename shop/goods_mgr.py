@@ -39,6 +39,9 @@ class GoodMgr:
         self.synchronous()
         self.__money = 15000
 
+    def get_money(self):
+        return self.__money
+
     def synchronous(self):
         '''
         同步到Db
@@ -86,7 +89,7 @@ class GoodMgr:
                             cat_list.append(goods)
                             self.__minst.add_records(self.__session, cat_list)
                         else:
-                            shopcat.num +=1
+                            shopcat.num += 1
                             shopcat.total_price = shopcat.num * good.price
                             self.__session.commit()
                 except:
@@ -112,9 +115,50 @@ class GoodMgr:
                 self.__minst.add_records(self.__session, cat_list)
 
     def show_shopcat(self):
+        '''
+        显示购物车内容
+        :return:
+        '''
         shopcat_list = self.__minst.query_records(self.__session, ShopCat)
         for shopcat in shopcat_list:
             print(shopcat)
+
+    def delete_cat(self, nums):
+        '''
+        删除或清空购物车
+        :return:
+        '''
+
+        try:
+            if len(nums) != 1:
+
+                for i in nums:
+                        self.__session.query(ShopCat).filter_by(cid=i).delete()
+                        self.__session.commit()
+                print('购物车以清空')
+
+            else:
+                self.__session.query(ShopCat).filter_by(cid=nums).delete()
+                self.__session.commit()
+                print('购物车以清空')
+
+        except Exception as e:
+            print(e)
+
+    def good_by(self):
+        '''
+        购买商品
+        :return:
+        '''
+        shops = self.__session.query(ShopCat).all()
+        money = 0
+        for shop in shops:
+            money += shop.total_price
+        if money > self.__money:
+            print('您的余额不足,请充值,结算失败')
+        else:
+            self.__money -= money
+            print('结算成功,余额为:', self.get_money())
 
 
 def __logging_data():
@@ -142,13 +186,6 @@ def __logging_data():
     return good_list
 
 
-def __add_cat(csid, num, total_price, order):
-    cat_list = []
-    goods = ShopCat(csid=csid, num=num, total_price=total_price, order=order)
-    cat_list.append(goods)
-    return cat_list
-
-
 def init_db(good_mgr):
     '''
     初始化数据
@@ -158,10 +195,94 @@ def init_db(good_mgr):
     good_mgr.add_good_record(good_list)
 
 
-good_mgr = GoodMgr()
+# good_mgr = GoodMgr()
 
-good_list = __logging_data()
-good_mgr.add_goods(good_list)
-good_mgr.show_goods()
-good_mgr.add_shopcat([1,2])
-good_mgr.show_shopcat()
+
+# good_list = __logging_data()
+# good_mgr.add_goods(good_list)
+# good_mgr.show_goods()
+# good_mgr.add_shopcat([1,2])
+# good_mgr.show_shopcat()
+# good_mgr.good_by()
+
+
+def add_good(good_mgr):
+    print("1--> 添加商品数据\n")
+    name = input("请输入商品名称:")
+    price = int(input("请输入商品价格:"))
+    stock = int(input("请输入库存"))
+    goods = Goods(name=name, price=price, stock=stock)
+    good_mgr.add_goods(goods)
+    print("\n添加数据成功!\n")
+    good_mgr.show_goods()
+
+
+def show_goods(good_mgr):
+    print("2--> 显示商品列表\n")
+    good_mgr.show_goods()
+
+
+def add_shop_car(good_mgr):
+    print("3---> 添加购物车\n")
+    good_ids = input("请输入一个或者多个商品id (以逗号,分割):")
+    good_ids_list = good_ids.split(",")
+    good_ids = [good_id.strip() for good_id in good_ids_list]
+    good_mgr.add_shopcat(good_ids)
+    good_mgr.show_shopcat()
+
+
+def clear_shop_car(good_mgr):
+    print("4--> 清空购物车\n")
+    good_mgr.show_shopcat()
+    num = input("请输入ID")
+    num_list = num.split(',')
+    nums = [num1 for num1 in num_list]
+    good_mgr.delete_cat(nums)
+
+
+
+def show_shop_car(good_mgr):
+    print("5--> 查看购物车内容\n")
+    good_mgr.show_shopcat()
+
+
+def buy_goods(good_mgr):
+    print("6--> 购买商品\n")
+    good_mgr.good_buy()
+
+
+DISPATCH_MAP = {
+    '1': add_good,
+    '2': show_goods,
+    '3': add_shop_car,
+    '4': clear_shop_car,
+    '5': show_shop_car,
+    '6': buy_goods,
+
+}
+
+
+def process():
+    good_mgr = GoodMgr()
+    print("0--->退出\n1--> 添加商品数据\n2--> 显示商品列表\n"
+          "3---> 添加购物车\n4--> 清空购物车\n"
+          "5--> 查看购物车内容\n6--> 购买商品\n7--> 订单详情列表\n8--> 获取当前余额\n")
+    while True:
+        input_str = input("请输入数字：").strip()
+        if input_str == '0':
+            print("0-->退出")
+            break
+        function = DISPATCH_MAP.get(input_str, None)
+        if function == None:
+            print("0--->退出\n1--> 添加商品数据\n2--> 显示商品列表\n"
+                  "3---> 添加购物车\n4--> 清空购物车\n"
+                  "5--> 查看购物车内容\n6--> 购买商品\n7--> 订单详情列表\n8--> 获取当前余额\n")
+            continue
+        function(good_mgr)
+
+
+if __name__ == "__main__":
+    process()
+    li = 's,sa,a'
+    print(len(li))
+    print(li.split(','))
